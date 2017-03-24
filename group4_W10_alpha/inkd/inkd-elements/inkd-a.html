@@ -1,0 +1,36 @@
+<link rel = 'import' href = '../inkd-behaviors/inkd-global-behavior.html'>
+
+
+<dom-module id = 'inkd-a'>
+
+    <template>
+        <a id = "anchor"><content></content></a>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'inkd-a',
+            
+            extends: 'a',
+            
+            properties: {
+                href: String,
+                node: String
+            },
+
+            behaviors: [GlobalBehavior],
+            
+            ready: function() {
+                if (this.href) {
+                    this.$.anchor.href = this.href;
+                    if (this.node) {
+                        this.$.anchor.href += '?node=' + this.node;
+                    }
+                } else {
+                    console.error('<a is = "inkd-a"> error: No file specified in \'href\'');
+                }
+            }
+        });
+    </script>
+
+</dom-module>

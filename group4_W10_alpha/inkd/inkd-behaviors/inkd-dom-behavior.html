@@ -1,0 +1,30 @@
+<script>
+    DomBehavior = {
+        
+        ready: function() {
+            this.domParent = Polymer.dom(this).parentNode;
+        },
+        
+        domAdd: function() {
+            Polymer.dom(this.domParent).appendChild(this);
+        },
+        
+        domRemove: function() {
+            if (this.globalElement.isReady) {
+                Polymer.dom(this.domParent).removeChild(this);
+            } else {
+               this.onGlobalReady('domRemoveLater');
+            }
+        },
+        
+        // BECAUSE POLYMER MESSES UP OTHERWISE
+        domRemoveLater: function() {
+            Polymer.dom(this.domParent).removeChild(this);
+        },
+        
+        domReplace: function(newElement) {
+            Polymer.dom(this.domParent).insertBefore(newElement, this);
+            this.domRemove();
+        }
+    };
+</script>

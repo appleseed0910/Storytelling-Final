@@ -1,0 +1,41 @@
+<script>
+    NavigateHandler = {
+        
+        listeners: {
+            'navigate-event': 'navigateHandler'
+        },
+        
+        ready: function() {
+            this.gotoNames = [];
+            
+            this.onGlobalEvent('navigate-redirect', 'navigateHandler');
+        },
+        
+        navigateHandler: function(e) {
+            var goto = e.detail.goto;
+            var restart = e.detail.restart;
+            console.log(this)
+
+            if (goto !== undefined) {
+                var index = this.gotoNames.indexOf(goto);
+                if (index !== -1) {
+                    // UNCOMMENT IF GOTO SHOULDN'T BE REDIRECTED AFTER IT IS HANDLED
+                    // e.detail.goto = undefined;
+                    this.handleNavigate(index);
+                }
+            }
+            
+            if (restart !== undefined) {
+                if (restart === '' || restart === this.name) {
+                    e.detail.restart = undefined;
+                    this.handleNavigate(-1);
+                }
+            }
+            
+            if (e.detail.goto === undefined && e.detail.restart === undefined) {
+                e.stopPropagation();
+            }            
+        },
+    };
+    
+</script>

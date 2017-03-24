@@ -1,0 +1,160 @@
+<link rel = 'import' href = '../inkd-behaviors/inkd-global-behavior.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-set-prop-attribute.html'>
+
+
+<dom-module id = 'inkd-if'>
+
+    <template strip-whitespace>
+    </template>
+    
+    <script>
+        Polymer({
+            is: 'inkd-if',
+            
+            properties: {
+                rule: String
+            },
+            
+            behaviors: [GlobalBehavior],
+            
+            ready: function() {
+                this.ruleTrue = false;
+                this.content = document.createElement('content');                
+                
+                if (this.rule === undefined) {
+                    console.error('<inkd-if> error: \'rule\' missing');
+                    this.checkOnAttach = false;
+                } else {
+                    if (this.rule.includes(' AND ') && this.rule.includes(' OR ')) {
+                        // CHECK IF 'AND' OR 'OR' ARE INSIDE A STRING
+                        console.error('<inkd-if> \'rule\' error: Cannot use both \'AND\' and \'OR\'');
+                    } else if (this.rule.includes(' AND ')) {
+                        // CHECK IF 'AND' IS INSIDE A STRING
+                        var condition = this.rule.split(' AND ');
+                        this.logic = 'and';
+                    } else if (this.rule.includes(' OR ')) {
+                        // CHECK IF 'OR' IS INSIDE A STRING
+                        var condition = this.rule.split(' OR ');
+                        this.logic = 'or';
+                    } else {
+                        var condition = [];
+                        condition[0] = this.rule;
+                        this.logic = null;
+                    }
+
+                    var keyValue = [];
+                    this.key = [];
+                    this.value = [];
+                    this.check = [];
+                    for (var i = 0; i < condition.length; i++) {
+                        if (condition[i].includes('>=')) {
+                            keyValue[i] = condition[i].split('>=', 2); 
+                            this.check[i] = '>=';
+                        } else if (condition[i].includes('<=')) {
+                            keyValue[i] = condition[i].split('<=', 2);
+                            this.check[i] = '<=';
+                        } else if (condition[i].includes('<')) {
+                            keyValue[i] = condition[i].split('<', 2);
+                            this.check[i] = '<';
+                        } else if (condition[i].includes('>')) {
+                            keyValue[i] = condition[i].split('>', 2);
+                            this.check[i] = '>';
+                        } else if (condition[i].includes('!=')) {
+                            keyValue[i] = condition[i].split('!=', 2);
+                            this.check[i] = '!=';
+                        } else if (condition[i].includes('==')) {
+                            keyValue[i] = condition[i].split('==', 2);
+                            this.check[i] = '=';
+                        } else if (condition[i].includes('=')) {
+                            keyValue[i] = condition[i].split('=', 2);
+                            this.check[i] = '=';
+                        } else {
+                            console.error('<inkd-if> \'rule\' error: Condition (=, ==, !=, <, >, <=, >=) missing')
+                        }
+
+                        this.key[i] = keyValue[i][0].trim();
+                        this.value[i] = keyValue[i][1].trim();           
+                    }      
+
+                    this.checkOnAttach = true;
+                }
+            },
+
+            attached: function() {
+                if (this.checkOnAttach) {
+                    for (var i = 0; i < this.key.length; i++) {
+                        if (this.getGlobal(this.key[i]) === undefined) {
+                            console.error('<inkd-if> \'rule\' error: Property \'' + this.key[i] + '\' does not exist');
+                        } else {
+                            this.onGlobalChange(this.key[i], 'checkHidden');
+                        }
+
+                        var parsed = this.parse(this.value[i]);
+                        if (parsed.type == 'error') {
+                            console.error('<inkd-if> \'rule\' error: \'' + this.value[i] + '\' is not a valid property value');
+                        } else if (parsed.type == 'property') {
+                            this.onGlobalChange(this.value[i], 'checkHidden');
+                        }
+                    }
+
+                    this.checkHidden();
+                    this.checkOnAttach = false;
+                }
+            },
+            
+            checkHidden: function(e) {
+                var ruleIsTrue = false;
+                for (var i = 0; i < this.key.length; i++) {
+                    var parsedKey = this.parse(this.key[i]);
+                    var parsedValue = this.parse(this.value[i]);
+                    
+                    if (['>=', '<=', '>', '<'].indexOf(this.check[i]) !== -1) {
+                        if (isNaN(parsedKey.result)) {
+                            console.error('<inkd-if> \'rule\' error: Comparison \'' + this.check[i] + '\' is not valid because \'' + this.key[i] + '\' is not a number');
+                        } else if (isNaN(parsedValue.result)) {
+                            console.error('<inkd-if> \'rule\' error: Comparison \'' + this.check[i] + '\' is not valid because \'' + this.value[i] + '\' is not a number');
+                        } else {
+                            switch (this.check[i]) {
+                                case '>=':
+                                    ruleIsTrue = parsedKey.result >= parsedValue.result;
+                                    break;
+                                case '<=':
+                                    ruleIsTrue = parsedKey.result <= parsedValue.result;
+                                    break;
+                                case '>':
+                                    ruleIsTrue = parsedKey.result > parsedValue.result;
+                                    break;
+                                case '<':
+                                    ruleIsTrue = parsedKey.result < parsedValue.result;
+                                    break;
+                            }
+                        }
+                    } else if (['!=', '='].indexOf(this.check[i] !== -1)) {
+                        switch (this.check[i]) {
+                            case '!=':
+                                ruleIsTrue = parsedKey.result !== parsedValue.result;
+                                break;
+                            case '=':
+                                ruleIsTrue = parsedKey.result === parsedValue.result;
+                                break;
+                        }
+                    }
+                    
+                    if ((this.logic === 'and' && !ruleIsTrue) || (this.logic === 'or' && ruleIsTrue)) {
+                        break;
+                    } 
+                }
+                
+                if (ruleIsTrue !== this.ruleTrue) {
+                    this.ruleTrue = ruleIsTrue;
+                    if (ruleIsTrue) {
+                        Polymer.dom(this.root).appendChild(this.content);
+                    } else if (Polymer.dom(this.content).parentNode === this.root) {
+                        Polymer.dom(this.root).removeChild(this.content);
+                    }                    
+                }                
+            }
+        });
+    </script>
+
+</dom-module>

@@ -1,0 +1,76 @@
+<link rel = 'import' href = '../inkd-behaviors/inkd-global-behavior.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-dom-behavior.html'>
+
+
+<dom-module id = 'inkd-video'>
+    
+    <script>
+        Polymer({
+            is: 'inkd-video',
+            
+            extends: 'video',
+            
+            behaviors: [GlobalBehavior, DomBehavior],
+            
+            ready: function() {
+                var source = Polymer.dom(this).querySelector('source');
+                
+                if (source.type == 'video/youtube' || source.type == 'video/vimeo') {
+                    
+                    if (source.type == 'video/youtube') {
+                        if (/^(http|https):\/\/(www.youtube.com\/watch\?v=|youtu.be\/)/.test(source.src)) {
+                        
+                            var iframe = document.createElement('iframe');
+                            iframe.src = source.src.replace('watch?v=', 'embed/').replace('youtu.be', 'www.youtube.com/embed');
+                            
+                            var videoID = iframe.src.slice(iframe.src.lastIndexOf('/') + 1);
+                            iframe.src += '?loop=' + (this.loop? '1': '0') + '&playlist=' + videoID;
+                            
+                        } else {
+                            console.error('<video = "inkd-video"><source> \'src\' error: Invalid YouTube link');
+                        }    
+                    } else if (source.type == 'video/vimeo') {
+                        if (/^(http|https):\/\/(vimeo.com\/)/.test(source.src)) {
+                        
+                            var iframe = document.createElement('iframe');
+                            iframe.src = source.src.replace('vimeo.com', 'player.vimeo.com/video');
+                            iframe.src += '?loop=' + (this.loop? '1': '0');
+                            
+                        } else {
+                            console.error('<video = "inkd-video"><source> \'src\' error: Invalid Vimeo link');
+                        }
+                    }
+                    
+                    iframe.src += '&autoplay=' + (this.autoplay ? '1': '0');
+                    iframe.src += '&controls=' + (this.controls? '1': '0');
+
+                    iframe.width = this.width || null;
+                    iframe.height = this.height || null;
+                    iframe.frameBorder = '0';
+                    iframe.classList = this.classList;
+                    iframe.setAttribute('allowfullscreen', 'true');
+
+                    this.domReplace(iframe);
+                          
+                } else {
+                    this.video = document.createElement('video');
+                    for (var i = 0; i < this.attributes.length; i++) {
+                        this.video[this.attributes[i].nodeName] = this.attributes[i].value || true; 
+                    }
+                    
+                    this.video.innerHTML = this.innerHTML;
+                    this.innerHTML = '';
+                    
+                    this.domReplace(this.video);
+                }
+            },
+            
+            attached: function() {
+                if (this.video && this.autoplay) {
+                    this.video.play();
+                }
+            }
+        });
+    </script>
+
+</dom-module>

@@ -1,0 +1,72 @@
+<script>
+    SetPropAttribute = {
+        
+        properties: {
+            setProp: String
+        },
+        
+        handleSetProp: function() {
+            if (this.setProp) {
+                var splitResult = this.setProp.split(',');
+                for (var i = 0; i < splitResult.length; i++) {
+                    var keyValue = splitResult[i].split(':');
+                    var key = keyValue[0].trim();
+                    var value = keyValue[1].trim();
+                    
+                    if (/^[+\-*/]/.test(value) && !isNaN(value.slice(1))) {
+                        var oldValue = this.getGlobal(key);
+                        if (oldValue !== undefined) {
+                            if (!isNaN(oldValue)) {
+                                switch (value.charAt(0)) {
+                                    case '+':
+                                        this.setGlobal(key, oldValue + Number(value.slice(1)));
+                                        break;
+                                    case '-':
+                                        this.setGlobal(key, oldValue - Number(value.slice(1)));
+                                        break;
+                                    case '*':
+                                        this.setGlobal(key, oldValue * Number(value.slice(1)));
+                                        break;
+                                    case '/':
+                                        this.setGlobal(key, oldValue / Number(value.slice(1)));
+                                        break;
+                                }
+                            } else {
+                                console.error('<' + this.tagName.toLowerCase() + '> \'set-prop\' error: Operation \'' + value.charAt(0) + '\' is not valid because \'' + key + '\' is not a number');
+                            }
+                        } else {
+                            if (value.charAt(0) == '+' || value.charAt(0) == '-') {
+                                this.setGlobal(key, Number(value.slice(1)));
+                            } else {
+                                console.error('<' + this.tagName.toLowerCase() + '> \'set-prop\' error: Operation \'' + value.charAt(0) + '\' is not valid because \'' + key + '\' is not defined');
+                            }
+                        }
+                    } else if (/^\+('|").*\1$/.test(value)) {
+                        var oldValue = this.getGlobal(key);
+                        if (oldValue !== undefined) {
+                            if (typeof oldValue == 'string') {
+                                this.setGlobal(key, oldValue + value.slice(2, -1));
+                            } else {
+                                console.error('<' + this.tagName.toLowerCase() + '> \'set-prop\' error: Operation \'+\' is not valid because \'' + key + '\' is not a string');
+                            } 
+                        } else {
+                            this.setGlobal(key, value.slice(2, -1));
+                        }
+                    } else { 
+                        var parsed = this.parse(value);
+                        if (parsed.type == 'error') {
+                            console.error('<' + this.tagName.toLowerCase() + '> \'set-prop\' error: \'' + value + '\' is not a valid property value');
+                        } else {
+                            this.setGlobal(key, parsed.result);
+                        }
+                    }
+                    
+                    if (keyValue[2]) {
+                        console.warn('<' + this.tagName.toLowerCase() + '> \'set-prop\' error: \'' + keyValue.slice(2).join('\', \'') + '\' unused because only a property and value are needed');
+                    }
+                }
+            }
+        }
+    };
+    
+</script>

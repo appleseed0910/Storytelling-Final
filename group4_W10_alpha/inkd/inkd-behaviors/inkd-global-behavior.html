@@ -1,0 +1,126 @@
+<script>
+    GlobalBehavior = {
+        
+        ready: function() {
+            this.globalElement = document.querySelector('inkd-ml');
+            
+            this.validateAttributes();
+        },
+        
+        validateAttributes: function() {
+            var htmlAttributes = ['accesskey', 'class', 'contenteditable', 'contextmenu', 'dir', 'draggable', 'dropzone', 'hidden', 'id', 'lang', 'spellcheck', 'style', 'tabindex', 'title', 'translate'];
+            // https://www.w3schools.com/tags/ref_standardattributes.asp
+            
+            var validAttributes = htmlAttributes.concat(Object.keys(this.properties));
+            for (var i = 0; i < this.behaviors.length; i++) {
+                if(this.behaviors[i].properties) {
+                    validAttributes = validAttributes.concat(Object.keys(this.behaviors[i].properties));
+                }
+            }
+            
+            for (var i = 0; i < validAttributes.length; i++) {
+                validAttributes[i] = validAttributes[i].replace(/[A-Z]/g, function(x) {return '-' + x.toLowerCase()});
+            }
+            
+            for (i = 0; i < this.attributes.length; i++) {
+                if (!(validAttributes.includes(this.attributes[i].nodeName) || (this.extends && this.attributes[i].nodeName in this === true) || this.attributes[i].nodeName.startsWith('data-'))) {
+                    console.error('<' + this.tagName.toLowerCase() + '> error: \'' + this.attributes[i].nodeName + '\' is not a valid attribute');
+                }
+            }
+        },
+        
+        onGlobalReady: function(handler) {
+            if (this.globalElement.isReady) {
+                this[handler]();
+            } else {
+                this.listen(this.globalElement, 'inkdml-ready', handler);
+            }
+        },
+        
+        onGlobalAttach: function(handler) {
+            if (this.globalElement.isAttached) {
+                this[handler]();
+            } else {
+                this.listen(this.globalElement, 'inkdml-attached', handler);
+            }
+        },
+        
+        getGlobal: function(prop) {
+            if (this.globalElement.get !== undefined) {
+                return this.globalElement.get('publicProps.' + prop);
+            } else {
+                return undefined;
+            } 
+        },
+        
+        setGlobal: function(prop, value) {
+            this.globalElement.set('publicProps.' + prop, value);
+            this.globalElement.fire('publicPropChanged-' + prop, {prop: prop, value: value});
+        },
+        
+        onGlobalChange: function(prop, handler) {
+            this.listen(this.globalElement, 'publicPropChanged-' + prop, handler);
+        },
+        
+        getGlobalPrivate: function(prop) {
+            if (this.globalElement.get !== undefined) {
+                return this.globalElement.get('privateProps.' + prop);
+            } else {
+                return undefined;
+            } 
+        },
+        
+        setGlobalPrivate: function(prop, value) {
+            this.globalElement.set('privateProps.' + prop, value);
+            this.globalElement.fire('privatePropChanged-' + prop, {prop: prop, value: value});
+        },
+        
+        onGlobalChangePrivate: function(prop, handler) {
+            this.listen(this.globalElement, 'privatePropChanged-' + prop, handler);
+        },
+        
+        fireGlobalEvent: function(event, detail) {
+            this.globalElement.fire(event, detail);
+        },
+        
+        onGlobalEvent: function(event, handler) {
+            this.listen(this.globalElement, event, handler);
+        },
+        
+        get globalNames() {
+            return this.globalElement.names;
+        },
+        
+        set globalNames(value) {
+           return; 
+        },
+        
+        get globalStart() {
+            return this.globalElement.startData;
+        },
+        
+        set globalStart(value) {
+            return;
+        },
+        
+        parse: function(stringValue) {
+            if (isNaN(stringValue)) {
+                if (stringValue == 'true') {
+                    return {result: true, type: 'boolean'};
+                } else if (stringValue == 'false') {
+                    return {result: false, type: 'boolean'};
+                } else if (/(^'|").*\1$/.test(stringValue)) {
+                    return {result: stringValue.slice(1, -1), type: 'string'};
+                } else if (this.getGlobal(stringValue) !== undefined) {
+                    return {result: this.getGlobal(stringValue), type: 'property'};
+                } else if (this.globalNames.indexOf(stringValue) !== -1) {
+                    return {result: stringValue, type: 'name'};
+                } else {
+                    return {result: null, type: 'error'};
+                }
+            } else {
+                return {result: Number(stringValue), type: 'number'};
+            }
+        }
+    };
+</script>

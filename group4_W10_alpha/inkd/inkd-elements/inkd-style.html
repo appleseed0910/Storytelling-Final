@@ -1,0 +1,23 @@
+<link rel = 'import' href = '../inkd-behaviors/inkd-global-behavior.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-effect-attribute.html'>
+
+
+<dom-module id = 'inkd-style'>
+    
+    <template>        
+        <content></content>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'inkd-style',
+
+            behaviors: [GlobalBehavior, EffectAttribute],
+            
+            ready: function() {
+                this.addEffects();
+            }
+        });
+    </script>
+
+</dom-module>

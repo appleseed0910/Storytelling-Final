@@ -1,0 +1,155 @@
+<link rel = 'import' href = '../inkd-behaviors/inkd-global-behavior.html'>
+<link rel = 'import' href = '../inkd-styles/inkd-animation-styles.html'>
+
+
+<dom-module id = 'inkd-animate'>
+    
+    <template>
+        <style include = 'inkd-animation-styles'></style>
+        
+        <span id = 'wrapper' style = 'width:100%; height:100%'>
+            <content></content>
+        </span>
+    </template>
+    
+    <script>
+        Polymer({
+            is: 'inkd-animate',
+            
+            properties: {
+                default: String,
+                rollover: String,
+                rollout: String
+            },
+            
+            behaviors: [GlobalBehavior],
+            
+            listeners: {
+                'mouseover': 'rolloverAnimation',
+                'mouseout': 'rolloutAnimation'
+            },
+            
+            ready: function() {
+                this.animationNames = ['bounce', 'flash', 'pulse', 'rubberBand', 'shake', 'headShake', 'swing', 'tada', 'wobble', 'jello', 'bounceIn', 'bounceInDown', 'bounceInLeft', 'bounceInRight', 'bounceInUp', 'bounceOut', 'bounceOutDown', 'bounceOutLeft', 'bounceOutRight', 'bounceOutUp', 'fadeIn', 'fadeInDown', 'fadeInDownBig', 'fadeInLeft', 'fadeInLeftBig', 'fadeInRight', 'fadeInRightBig', 'fadeInUp', 'fadeInUpBig', 'fadeOut', 'fadeOutDown', 'fadeOutDownBig', 'fadeOutLeft', 'fadeOutLeftBig', 'fadeOutRight', 'fadeOutRightBig', 'fadeOutUp', 'fadeOutUpBig', 'flip', 'flipInX', 'flipInY', 'flipOutX', 'flipOutY', 'lightSpeedIn', 'lightSpeedOut', 'rotateIn', 'rotateInDownLeft', 'rotateInDownRight', 'rotateInUpLeft', 'rotateInUpRight', 'rotateOut', 'rotateOutDownLeft', 'rotateOutDownRight', 'rotateOutUpLeft', 'rotateOutUpRight', 'hinge', 'rollIn', 'rollOut', 'zoomIn', 'zoomInDown', 'zoomInLeft', 'zoomInRight', 'zoomInUp', 'zoomOut', 'zoomOutDown', 'zoomOutLeft', 'zoomOutRight', 'zoomOutUp', 'slideInDown', 'slideInLeft', 'slideInRight', 'slideInUp', 'slideOutDown', 'slideOutLeft', 'slideOutRight', 'slideOutUp'];
+                
+                this.parameterNames = ['name', 'duration', 'iteration-count', 'delay'];
+                
+                var propNames = ['default', 'rollover', 'rollout'];
+
+                this.animationData = {};
+                for (var i = 0; i < propNames.length; i++) {
+                    if (this[propNames[i]]) {
+                        this.parseAnimationData(propNames[i]);
+                    }
+                }
+                
+                this.updateAnimations(['default']);
+            },
+            
+            parseAnimationData: function(prop) {
+                this.animationData[prop] = {};        
+                for (var i = 0; i < this.parameterNames.length; i++) {
+                    this.animationData[prop][this.parameterNames[i]] = [];
+                }
+                
+                var animations = this[prop].replace(/\s/g, '').split(',');
+                var delay = 0;
+                
+                for (var i = 0; i < animations.length; i++) {
+                    var parameters = animations[i].split(':');
+                    
+                    var name = null;
+                    var duration = null;
+                    var iteration = null;
+                    
+                    for (var j = 0; j < parameters.length; j++) {
+                        var value = parameters[j];
+                        if (this.animationNames.includes(value) || value === 'wait') {
+                            if (name === null) {
+                                name = value;
+                            } else {
+                                console.warn('<inkd-animate> \'' + prop + '\' warning: ' + '\'' + value + '\' unused in \'' + animations[i] + '\' because animation type already set to \'' + name + '\'');
+                            }
+                        } else if (!isNaN(value) || value === 'infinite') {
+                            if (iteration === null) {
+                                iteration = value;
+                            } else {
+                                console.warn('<inkd-animate> \'' + prop + '\' warning: ' + '\'' + value + '\' unused in \'' + animations[i] + '\' because animation count already set to \'' + iteration + '\'');
+                            }
+                        } else if (value.endsWith('s') && !isNaN(value.slice(0, -1))) {
+                            if (duration === null) {
+                                duration = Number(value.slice(0, -1));
+                            } else {
+                                console.warn('<inkd-animate> \'' + prop + '\' warning: ' + '\'' + value + '\' unused in \'' + animations[i] + '\' because animation duration already set to \'' + duration + '\'');
+                            }
+                        } else if (value.endsWith('ms') && !isNaN(value.slice(0, -2))) {
+                            if (duration === null) {
+                                duration = Number(value.slice(0, -2))/1000;
+                            } else {
+                                console.warn('<inkd-animate> \'' + prop + '\' warning: ' + '\'' + value + '\' unused in \'' + animations[i] + '\' because animation duration already set to \'' + duration + '\'');
+                            }
+                        } else { 
+                            // UNCOMMENT THIS TO SUPPORT CUSTOM ANIMATIONS
+                            // if (name === null) {
+                            //     name = value;
+                            // } else {
+                            //     console.warn('<inkd-animate> \'' + prop + '\' warning: ' + '\'' + value + '\' unused in \'' + animations[i] + '\' because animation type already set to \'' + name + '\'');
+                            // }
+                            console.error('<inkd-animate> \'' + prop + '\' error: ' + '\'' + value + '\' is not a valid animation parameter');
+                        }
+                    }
+                    
+                    if (name === null) {
+                        console.error('<inkd-animate> \'' + prop + '\' error: No animation type specified in \'' + animations[i] + '\'');
+                    } else if (name === 'wait') {
+                        duration = duration === null? 1 : duration;
+                        delay += duration;
+                        
+                        if (iteration !== null) {
+                            console.warn('<inkd-animate> \'' + prop + '\' warning: \'' + iteration + '\' unused in' +  animations[i] + '\' because \'wait\' does not need animation count');
+                        }
+                    } else {
+                        duration = duration === null? '1s' : duration + 's';
+                        iteration = iteration === null? 1 : iteration;
+                        
+                        this.animationData[prop]['name'].push(name);
+                        this.animationData[prop]['duration'].push(duration);
+                        this.animationData[prop]['iteration-count'].push(iteration);
+                        this.animationData[prop]['delay'].push(delay + 's');
+                    }
+                }
+            },
+            
+            
+            updateAnimations: function(activeProp) {
+                var currentAnimation = {};
+                
+                for (var i = 0; i < this.parameterNames.length; i++) {
+                    currentAnimation[this.parameterNames[i]] = [];
+                    
+                    for (j = 0; j < activeProp.length; j++) {
+                        if (this.animationData[activeProp[j]]) {
+                            currentAnimation[this.parameterNames[i]] = currentAnimation[this.parameterNames[i]].concat(this.animationData[activeProp[j]][this.parameterNames[i]]);
+                        }
+                    }
+                                         
+                    this.$.wrapper.style['animation-' + this.parameterNames[i]] = currentAnimation[this.parameterNames[i]].toString();
+                    this.$.wrapper.style['-webkit-animation-' + this.parameterNames[i]] = currentAnimation[this.parameterNames[i]].toString();
+                }
+                
+                for(var i = 0; i < currentAnimation['name'].length; i++) {      
+                    this.$.wrapper.classList.add(currentAnimation['name'][i]);  
+                }
+            },
+            
+            rolloverAnimation: function() {
+                this.updateAnimations(['rollover', 'default']);
+            },
+            
+            rolloutAnimation: function() {
+                this.updateAnimations(['rollout', 'default']);
+            }
+        });
+    </script>
+
+</dom-module>

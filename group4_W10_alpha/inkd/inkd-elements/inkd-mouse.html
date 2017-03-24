@@ -1,0 +1,152 @@
+<link rel = 'import' href = '../inkd-elements/inkd-style.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-global-behavior.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-mouse-event-behavior.html'>
+
+
+<dom-module id = 'inkd-mouse'>
+
+    <template>
+        <inkd-style id = "wrapper" style = "display: inline-block;" on-mouseenter = "handleOver" on-mouseleave = "handleOut" on-mousedown = "handleDown" on-mouseup = "handleUp" on-tap = 'handleClick'>
+            <content select$ = "{{selectString}}"></content>
+            <span id = "default">
+                <content></content>
+            </span>
+        </inkd-style>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'inkd-mouse',
+
+            behaviors: [GlobalBehavior],
+            
+            ready: function() {
+                // MOUSEDOWN/PRESS IS DIFFERENT FROM CLICK/TAP
+                this.mouseEvents = ['over', 'down', 'click'];
+                this.selectString = 'inkd-' + this.mouseEvents.join(', inkd-');
+                
+                this.elements = {};
+                for (var i = 0; i < this.mouseEvents.length; i++) {
+                    this.elements[this.mouseEvents[i]] = Polymer.dom(this).querySelectorAll('inkd-' + this.mouseEvents[i]);
+                }
+                
+                this.$.wrapper.style.position = 'relative';
+                
+                this.swap = 0;
+            },
+            
+            addElements: function(type) {
+                var els = this.elements[type];
+                
+                var swap = false;
+                for (var i = 0; i < els.length; i++) {
+                    this.$.wrapper.addEffects(els[i].effect);
+                    els[i].domAdd();
+                    
+                    if (els[i].swap) {
+                        swap = true;
+                    }
+                }
+                
+                if (swap) {
+                    this.swap++;
+                    this.$.default.style.opacity = 0;
+                }
+            },
+            
+            removeElements: function(type) {
+                var els = this.elements[type];
+
+                var swap = false;
+                for (var i = 0; i < els.length; i++) {
+                    this.$.wrapper.removeEffects(els[i].effect);
+                    els[i].domRemove();
+                    
+                    if (els[i].swap) {
+                        swap = true;
+                    }
+                }
+                
+                if (swap) {
+                    this.swap--;
+                    
+                    if (this.swap === 0) {
+                        this.$.default.style.opacity = 1;
+                    }
+                }
+            },
+            
+            handleOver: function() {
+                this.addElements('over');
+            },
+            
+            handleOut: function() {
+                this.removeElements('over');
+            },
+            
+            handleDown: function() {
+                this.addElements('down');
+            },
+            
+            handleUp: function() {
+                this.removeElements('down');
+            },
+            
+            handleClick: function() {
+                this.addElements('click');
+            }
+        });
+    </script>
+
+</dom-module>
+
+
+<dom-module id = 'inkd-over'>
+
+    <template>
+        <content></content>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'inkd-over',
+
+            behaviors: [MouseEventBehavior]
+        });
+    </script>
+
+</dom-module>
+
+
+<dom-module id = 'inkd-down'>
+
+    <template>
+        <content></content>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'inkd-down',
+
+            behaviors: [MouseEventBehavior]
+        });
+    </script>
+
+</dom-module>
+
+
+<dom-module id = 'inkd-click'>
+
+    <template>
+        <content></content>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'inkd-click',
+
+            behaviors: [MouseEventBehavior]
+        });
+    </script>
+
+</dom-module>

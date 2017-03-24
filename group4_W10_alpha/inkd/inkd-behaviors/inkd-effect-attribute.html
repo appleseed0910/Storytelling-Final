@@ -1,0 +1,123 @@
+<script>
+    EffectAttribute = {
+        
+        properties: {
+            effect: String
+        },
+        
+        ready: function() {
+            this.effectsData = {
+                'blur': {default: 1, min: 0, suffix: 'px'},
+                'brightness': {default: 1, min: 0}, 
+                'contrast': {default: 1, min: 0}, 
+//                'drop-shadow': {}, 
+                'grayscale': {default: 1, min: 0, max: 1}, 
+                'hue-rotate': {default: 180, min: 0, max: 360, suffix: 'deg'}, 
+                'invert': {default: 1, min: 0, max: 1}, 
+                'opacity': {default: 1, min: 0, max: 1}, 
+                'saturate': {default: 1, min: 0}, 
+                'sepia': {default: 1, min: 0, max: 1}
+            };
+            
+            this.effectSpan = document.createElement('span');
+            this.effectSpan.innerHTML = Polymer.dom(this.root).innerHTML;
+            Polymer.dom(this.root).innerHTML = '';
+            Polymer.dom(this.root).appendChild(this.effectSpan);
+            
+            this.currentEffects = [];
+            this.validateEffects();
+            
+            this.isReady = true;
+        },
+        
+        validateEffects: function() {
+            if (this.effect) {
+                var effects = this.effect.replace(/\s/g, '').split(',');
+                
+                for (var i = 0; i < effects.length; i++) {
+                    var splitResult = effects[i].split(':');
+                    
+                    var effectData = this.effectsData[splitResult[0]];
+                    if (effectData === undefined) {
+                        console.error('<' + this.tagName + '> \'effect\' error: \'' + splitResult[0] + '\' is not a valid effect name');
+                    } else if (splitResult[1]) {
+                        if (isNaN(splitResult[1])) {
+                            console.error('<' + this.tagName + '> \'effect\' error: \'' + splitResult[1] + '\' is not a valid effect parameter');
+                        } else {
+                            if (effectData.min && Number(splitResult[1]) < effectData.min) {
+                                console.error('<' + this.tagName + '> \'effect\' error: \'' + splitResult[1] + '\' is less than the minimum allowed value for the \'' + splitResult[0] + '\' parameter');
+                            }
+                            
+                            if (effectData.max && Number(splitResult[1]) > effectData.max) {
+                                console.error('<' + this.tagName + '> \'effect\' error: \'' + splitResult[1] + '\' is more than the maximum allowed value for the \'' + splitResult[0] + '\' parameter');
+                            }
+                        }
+                    }
+                    
+                    if (splitResult[2]) {
+                        console.warn('<' + this.tagName + '> \'effect\' warning: \'' + splitResult.slice(2).join('\', \'') + '\' unused because only one parameter is needed for \'' + splitResult[0] + '\' effect');
+                    }
+                }
+            }
+        },
+        
+        addEffects: function(string) {
+            var effectString = string === undefined ? this.effect : string;
+            
+            if (effectString !== undefined) {
+                var effects = effectString.replace(/\s/g, '').split(',');
+                
+                for (var i = 0; i < effects.length; i++) {
+                    if (!this.currentEffects.includes(effects[i])) {
+                        this.currentEffects.push(effects[i]);
+                    }
+                }                
+            }
+            
+            this.updateEffects();
+        },
+        
+        removeEffects: function(string) {
+            var effectString = string === undefined ? this.effect : string;
+            
+            if (effectString !== undefined) {
+                var effects = effectString.replace(/\s/g, '').split(',');
+                
+                for (var i = 0; i < effects.length; i++) {
+                    var index = this.currentEffects.indexOf(effects[i]);
+                    if (index !== -1) {
+                        this.currentEffects.splice(index, 1);
+                    }
+                }                
+            }
+            
+            this.updateEffects();
+        },
+        
+        updateEffects: function() {
+            var cssString = '';
+            for (var i = 0; i < this.currentEffects.length; i++) {
+                var splitResult = this.currentEffects[i].split(':', 2);
+                
+                var effectData = this.effectsData[splitResult[0]];
+                if (effectData !== undefined) {
+                    if (splitResult[1] && !isNaN(splitResult[1])) {
+                        if ((effectData.min && Number(splitResult[1]) < effectData.min) || (effectData.max && Number(splitResult[1]) > effectData.max)) {
+                            var value = String(effectData.default);
+                        } else {
+                            var value = splitResult[1];
+                        }
+                    } else {
+                        var value = String(effectData.default);
+                    }
+                    
+                    var suffix = effectData.suffix === undefined ? '' : effectData.suffix;
+                    
+                    cssString += ' ' + splitResult[0] + '(' + value + suffix + ')';
+                }
+            }
+            this.effectSpan.style['filter'] = cssString;
+            this.effectSpan.style['-webkit-filter'] = cssString;
+        }
+    }
+</script>

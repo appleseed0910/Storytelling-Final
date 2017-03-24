@@ -1,0 +1,11 @@
+{
+	"name": "brackets-inkdml",
+	"title": "inkDml Code Hinting",
+	"description": "Code hinting for inkDml",
+	"homepage": "",
+	"version": "1.0.1",
+	"author": "inkDlab",
+	"engines": {
+		"brackets": ">=1.0.0"
+	}
+}

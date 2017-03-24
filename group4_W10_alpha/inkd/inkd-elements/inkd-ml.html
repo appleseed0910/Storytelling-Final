@@ -1,0 +1,181 @@
+<link rel = 'import' href = '../inkd-behaviors/inkd-global-behavior.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-name-attribute.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-tracking-behavior.html'>
+
+
+<dom-module id = 'inkd-ml'>
+
+    <script>
+        Polymer({
+            is: 'inkd-ml',
+            
+            properties: {
+                track: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+
+            behaviors: [TrackingBehavior],
+            
+            listeners: {
+                'navigate-event': 'redirectNavigate'
+            },
+            
+            ready: function() {
+                this.publicProps = {}; 
+                this.privateProps = {};
+                this.names = [];
+                
+                this.startData = {};
+                this.parseURL();
+                
+                this.fire('inkdml-ready', {track: this.track}); 
+                this.isReady = true;
+            },
+            
+            attached: function() {
+                this.initiateTracking();
+                
+                this.fire('inkdml-attached'); 
+                this.isAttached = true;              
+            },
+            
+            parseURL: function() {
+                if (location.search.startsWith('?')) {
+                    var splitResult = location.search.slice(1).split('&');
+                    for (var i = 0; i < splitResult.length; i++) {
+                        var keyValue = splitResult[i].split('=');
+                        
+                        if (keyValue[0] === 'node') {
+                            this.startData.node = keyValue[1];
+                        }
+                    }
+                }
+            },
+            
+            redirectNavigate: function(e) {
+                var goto = e.detail.goto;
+                var restart = e.detail.restart;
+                
+                if (goto !== undefined && !this.names.includes(goto)) {
+                    console.error('<' + e.target.tagName.toLowerCase() + '> \'goto\' error: Node or scene with name \'' + goto + '\' does not exist');
+                    e.detail.goto = undefined;
+                }
+                
+                if (restart !== undefined && !this.names.includes(restart)) {
+                    console.error('<' + e.target.tagName.toLowerCase() + '> \'restart\' error: CYOA or panorama with name \'' + restart + '\' does not exist');
+                    e.detail.restart = undefined;
+                } 
+                
+                if (e.detail.goto !== undefined || e.detail.restart !== undefined) {
+                    this.fire('navigate-redirect', e.detail);
+                }
+            }
+        });
+    </script>
+
+</dom-module>
+
+
+<dom-module id = 'inkd-box'>
+
+    <script>
+        Polymer({
+            is: 'inkd-box',
+            
+            behaviors: [GlobalBehavior, NameAttribute]
+        });
+    </script>
+
+</dom-module>
+
+
+<dom-module id = 'inkd-stuff'>
+
+    <script>
+        Polymer({
+            is: 'inkd-stuff',
+            
+            properties: {
+                box: String
+            },
+            
+            behaviors: [GlobalBehavior],
+            
+            ready: function() {
+                // Replace 2 lines below with this one if template strings become fully supported
+                // var target = document.querySelector(`inkd-box[name='${this.box}']`);
+                
+                var selector = 'inkd-box[name="' + this.box + '"]';
+                var target = document.querySelector(selector);
+                
+                if (target == null) {
+                    console.error('<inkd-stuff> \'box\' error: <inkd-box> with name \'' + this.box + '\' does not exist')
+                } else {
+                    Polymer.dom(target).appendChild(this);
+                }
+            }
+        });
+    </script>
+
+</dom-module>
+
+<dom-module id = 'inkd-container'>
+
+    <script>
+        Polymer({
+            is: 'inkd-container',
+            
+            properties: {
+                content: String
+            },
+            
+            behaviors: [GlobalBehavior],
+            
+            ready: function() {                
+                this.contentElement = this.getGlobalPrivate(this.content + '-content');
+                
+                if (this.contentElement !== undefined) {
+                    Polymer.dom(this).appendChild(this.contentElement);
+                } else {
+                    this.onGlobalEvent(this.content + '-content-ready', 'getContent');
+                }  
+            },
+            
+            attached: function() {
+                if (this.contentElement === undefined) {
+                    console.error('<inkd-container> \'content\' error: <inkd-content> with name \'' + this.content + '\' does not exist');
+                }
+            },
+            
+            getContent: function(e) {
+                this.contentElement = e.detail.content;
+                Polymer.dom(this).appendChild(this.contentElement);
+            }
+        });
+    </script>
+
+</dom-module>
+
+
+<dom-module id = 'inkd-content'>
+
+    <script>
+        Polymer({
+            is: 'inkd-content',
+            
+            behaviors: [GlobalBehavior, NameAttribute],
+            
+            ready: function() {
+                this.onGlobalReady('setContent');
+            },
+            
+            setContent: function() {
+                this.setGlobalPrivate(this.name + '-content', this);
+                this.fireGlobalEvent(this.name + '-content-ready', {content: this});
+            }
+        });
+    </script>
+
+</dom-module>

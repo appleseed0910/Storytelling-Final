@@ -1,0 +1,202 @@
+<link rel = 'import' href = '../inkd-behaviors/inkd-global-behavior.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-set-prop-attribute.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-name-attribute.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-audio-attributes.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-navigate-handler.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-tracking-behavior.html'>
+
+<link rel = 'import' href = '../inkd-behaviors/inkd-node-behavior.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-option-behavior.html'>
+
+
+<dom-module id = 'inkd-cyoa'>
+
+    <template>
+        <content select = '[currentNode]'></content>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'inkd-cyoa',
+            
+            properties: {
+//                restart: {
+//                    type: Boolean,
+//                    value: false
+//                }
+            },
+            
+            behaviors: [GlobalBehavior, SetPropAttribute, NameAttribute, AudioAttributes, NavigateHandler, TrackingBehavior],
+            
+            ready: function() {   
+                this.nameProps = [{prop: 'prevNode', default: null}]; 
+                
+                this.onGlobalAttach('initiate');
+            },
+            
+            initiate: function() {
+                if (!this.started) {
+                    this.nodes = Polymer.dom(this).querySelectorAll('inkd-node, inkd-cyoa-node, inkd-pano-scene')
+                    this.nodeParents = [];
+
+                    this.startIndex = 0;
+                    for (var i = 0; i < this.nodes.length; i++) {
+                        this.gotoNames[i] = this.nodes[i].getAttribute('name');
+                        if (this.nodes[i].hasAttribute('start')) {
+                            this.startIndex = i;
+                        }
+
+                        var whileNode = this.nodes[i];
+                        while (this.nodeParents[i] === undefined) {
+                            if (Polymer.dom(whileNode).parentNode === this) {
+                                this.nodeParents[i] = whileNode;
+                            } else {
+                                whileNode = Polymer.dom(whileNode).parentNode;
+                            }
+                        }
+                    }
+                       
+                    if (this.globalStart.node) {
+                        var index = this.gotoNames.indexOf(this.globalStart.node);
+                        if (index !== -1) {
+                            var initialIndex = index;
+                        } else {
+                            var initialIndex = this.startIndex;
+                        }
+                    }
+                    
+                    this.startCyoa(initialIndex);
+                    this.started = true;
+                } 
+//                else if (this.restart) {
+//                    this.startCyoa();
+//                }
+            },
+            
+            startCyoa: function(index) { 
+                this.handleSetProp();
+                this.handleAudio();
+                
+                if (index) {
+                    this.updateCurrentNode(index);
+                } else {
+                    this.updateCurrentNode(this.startIndex);
+                }
+                
+                this.addTrackingData({event: 'cyoa started'});
+            },
+            
+            updateCurrentNode: function(index) {
+                if (this.currentIndex != undefined) {     
+                    Polymer.dom(this.nodeParents[this.currentIndex]).removeAttribute('currentNode');
+                    if (this.name) {
+                        this.setGlobal(this.name + '.prevNode', this.gotoNames[this.currentIndex]);
+                    }
+                }
+
+                this.currentIndex = index;
+
+                Polymer.dom(this.nodeParents[index]).setAttribute('currentNode', ''); 
+                if (this.name) {
+                    this.setGlobal(this.name + '.currentNode', this.gotoNames[this.currentIndex]);
+                }
+                
+                this.addTrackingData({event: 'cyoa-node-changed', node: this.gotoNames[this.currentIndex]});
+            },
+            
+            handleNavigate: function(index) {
+                if (index === -1) {
+                    this.startCyoa();
+//                    var nested = Polymer.dom(this).querySelectorAll('inkd-cyoa, inkd-pano');
+//                    for (var i = 0; i < nested.length; i++) {
+//                        nested[i].handleNavigate(-1);
+//                    }
+                } else {
+                    if (this.started) {
+                        this.updateCurrentNode(index);
+                    } else {
+                        this.startIndex = index;
+                    }
+                }
+            }
+        });
+    </script>
+
+</dom-module>
+
+
+<dom-module id = 'inkd-cyoa-node'>
+
+    <script>
+        Polymer({
+            is: 'inkd-cyoa-node',
+            
+            behaviors: [NodeBehavior]
+        });
+    </script>
+
+</dom-module>
+
+
+<dom-module id = 'inkd-node'>
+
+    <script>
+        Polymer({
+            is: 'inkd-node',
+            
+            behaviors: [NodeBehavior]
+        });
+    </script>
+    
+</dom-module>
+
+
+<dom-module id = 'inkd-cyoa-option'>
+
+    <template>
+        <content></content>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'inkd-cyoa-option',
+
+            behaviors: [OptionBehavior]
+        });
+    </script>
+
+</dom-module>
+
+
+<dom-module id = 'inkd-option'>
+
+    <template>
+        <content></content>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'inkd-option',
+
+            behaviors: [OptionBehavior]
+        });
+    </script>
+
+</dom-module>
+
+
+<dom-module id = 'inkd-button'>
+
+    <template>
+        <content></content>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'inkd-button',
+
+            behaviors: [OptionBehavior]
+        });
+    </script>
+
+</dom-module>

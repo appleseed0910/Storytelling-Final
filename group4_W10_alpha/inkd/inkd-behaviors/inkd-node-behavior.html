@@ -1,0 +1,23 @@
+<link rel = 'import' href = 'inkd-global-behavior.html'>
+<link rel = 'import' href = 'inkd-set-prop-attribute.html'>
+<link rel = 'import' href = 'inkd-name-attribute.html'>
+<link rel = 'import' href = 'inkd-audio-attributes.html'>
+
+
+<script>
+    NodeBehaviorImpl = {
+        properties: {
+            start: {
+                type: Boolean,
+                value: false
+            }
+        },
+
+        attached: function() {
+            this.handleSetProp();
+            this.handleAudio();
+        }
+    };
+    
+    NodeBehavior = [GlobalBehavior, SetPropAttribute, NameAttribute, AudioAttributes, NodeBehaviorImpl];
+</script>

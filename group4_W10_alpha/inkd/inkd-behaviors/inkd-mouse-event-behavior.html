@@ -1,0 +1,40 @@
+<link rel = 'import' href = 'inkd-global-behavior.html'>
+<link rel = 'import' href = 'inkd-dom-behavior.html'>
+<link rel = 'import' href = 'inkd-effect-attribute.html'>
+
+
+<script>
+    MouseEventBehaviorImpl = {   
+        properties: {
+            swap: {
+                type: Boolean,
+                value: false
+            },
+            
+            up: {
+                type: Number,
+                value: 0
+            },
+            
+            right: {
+                type: Number,
+                value: 0
+            }
+        },
+        
+        ready: function() {
+            this.style.position = 'absolute';
+            this.style.left = this.right + 'px';
+            this.style.top = -this.up + 'px';
+        },
+        
+        attached: function() {
+            if (!this.initialized) {
+                this.domRemove();
+                this.initialized = true;
+            }
+        }
+    };
+    
+    MouseEventBehavior = [GlobalBehavior, DomBehavior, EffectAttribute, MouseEventBehaviorImpl];
+</script>

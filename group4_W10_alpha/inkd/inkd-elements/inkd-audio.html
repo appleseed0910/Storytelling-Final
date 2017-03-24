@@ -1,0 +1,47 @@
+<link rel = 'import' href = '../inkd-behaviors/inkd-global-behavior.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-dom-behavior.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-name-attribute.html'>
+
+
+<dom-module id = 'inkd-audio'>
+    
+    <script>
+        Polymer({
+            is: 'inkd-audio',
+            
+            extends: 'audio',
+            
+            properties: {
+                volume: {
+                    type: Number,
+                    value: 1
+                }
+            },
+            
+            behaviors: [GlobalBehavior, DomBehavior, NameAttribute],
+            
+            ready: function() {
+                this.nameProps = [{prop: 'playing', default: false}]; 
+                                
+                this.audio = document.createElement('audio');
+                for (var i = 0; i < this.attributes.length; i++) {
+                    this.audio[this.attributes[i].nodeName] = this.attributes[i].value || true; 
+                }
+
+                this.audio.innerHTML = this.innerHTML;
+                this.innerHTML = '';
+
+                this.domReplace(this.audio);
+                
+                this.audio.volume = this.volume;
+                
+                this.onGlobalReady('setAudio');
+            },
+            
+            setAudio: function() {
+                this.setGlobalPrivate('audio-' + this.name, this);
+            }
+        });
+    </script>
+
+</dom-module>

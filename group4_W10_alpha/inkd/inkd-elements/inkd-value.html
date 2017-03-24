@@ -1,0 +1,36 @@
+<link rel = 'import' href = '../inkd-behaviors/inkd-global-behavior.html'>
+
+
+<dom-module id = 'inkd-value'>
+
+    <template>
+        <span>{{value}}</span>
+    </template>
+    
+    <script>
+        Polymer({
+            is: 'inkd-value',
+            
+            properties: {
+                prop: String
+            },
+            
+            behaviors: [GlobalBehavior],
+            
+            ready: function() {
+                this.onGlobalChange(this.prop, 'updateValue');
+            },
+            
+            attached: function() {
+                if (this.getGlobal(this.prop) == undefined) {
+                    console.error('<inkd-value> \'prop\' error: Property \'' + this.prop + '\' has not been set');
+                }
+            },
+            
+            updateValue: function(e) {
+                this.value = e.detail.value;
+            }
+        });
+    </script>
+
+</dom-module>

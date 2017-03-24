@@ -1,0 +1,33 @@
+<link rel = 'import' href = 'inkd-global-behavior.html'>
+<link rel = 'import' href = 'inkd-set-prop-attribute.html'>
+<link rel = 'import' href = 'inkd-navigate-event.html'>
+<link rel = 'import' href = 'inkd-audio-attributes.html'>
+<link rel = 'import' href = 'inkd-tracking-behavior.html'>
+
+
+<script>
+    OptionBehaviorImpl = {
+        properties: {
+            trackTag: String
+        },
+        
+        listeners: {
+            'tap': 'handleOption'
+        },
+
+        handleOption: function() {                
+            var data = {event: 'cyoa-option-selected', option: Polymer.dom(this).innerHTML};
+            if (this.trackTag) {
+                data.tag = this.trackTag;
+            }
+            this.addTrackingData(data);
+
+            this.handleSetProp();
+            this.handleAudio();
+
+            this.fireNavigate();
+        }
+    };
+    
+    OptionBehavior = [GlobalBehavior, SetPropAttribute, NavigateEvent, AudioAttributes, TrackingBehavior, OptionBehaviorImpl];
+</script>

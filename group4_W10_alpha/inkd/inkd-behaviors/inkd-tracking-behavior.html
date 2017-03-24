@@ -1,0 +1,58 @@
+<script>
+    TrackingBehavior = {
+        ready: function() {
+            var mlElement = document.querySelector('inkd-ml');
+            this.listen(mlElement, 'inkdml-ready', 'setTracking');
+        },
+        
+        setTracking: function(e) {
+            this.tracking = e.detail.track;
+        },
+        
+        initiateTracking: function() {
+            if (this.tracking) {
+                localStorage.removeItem('inkd-tracking-data');
+
+                /****** ADD STUDENT USERNAME OR SOME KIND OF UNIQUE ID ****/
+                var data = [{event: 'tracking-initiated', time: new Date()}];
+                localStorage.setItem('inkd-tracking-data', JSON.stringify(data));
+
+                this.pageActive = document.visibilityState === 'visible' && document.hasFocus();
+                this.trackPageStatus();
+            }
+        },
+        
+        trackPageStatus: function() {
+            
+            /**** MORE STUFF HERE IF OLDER BROWSERS NEED TO BE SUPPORTED ****/
+            
+            this.listen(document, 'visibilitychange', 'checkPageActive');      
+            this.listen(window, 'blur', 'checkPageActive');
+            this.listen(window, 'focus', 'checkPageActive');
+        },
+        
+        checkPageActive: function() {
+            if (this.pageActive) {
+                if (document.visibilityState === 'hidden' || !document.hasFocus()) {
+                    this.pageActive = false;
+                    this.addTrackingData({event: 'page-inactive'});
+                }
+            } else {
+                if (document.visibilityState === 'visible' || document.hasFocus()) {
+                    this.pageActive = true;
+                    this.addTrackingData({event: 'page-active'});
+                }
+            }
+        },
+        
+        addTrackingData: function(newObject) {
+            if (this.tracking) {
+                var data = JSON.parse(localStorage.getItem('inkd-tracking-data'));
+                newObject.time = new Date();
+                data.push(newObject);
+                console.log(data);
+                localStorage.setItem('inkd-tracking-data', JSON.stringify(data));
+            }
+        }
+    };
+</script>

@@ -1,0 +1,15 @@
+<script>
+    NavigateEvent = {
+        
+        properties: {
+            goto: String,
+            restart: String
+        },
+        
+        fireNavigate: function() {
+            if (this.goto !== undefined || this.restart !== undefined) {                
+                this.fire('navigate-event', {goto: this.goto, restart: this.restart});
+            }
+        }
+    };
+</script>

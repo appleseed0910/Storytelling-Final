@@ -1,0 +1,404 @@
+<link rel = 'stylesheet' href = '../pannellum/pannellum.css'/>
+<script type = 'text/javascript' src = '../pannellum/libpannellum.js'></script>
+<script type = 'text/javascript' src = '../pannellum/RequestAnimationFrame.js'></script>
+<script type = 'text/javascript' src = '../pannellum/pannellum.js'></script>
+
+<link rel = 'import' href = '../inkd-behaviors/inkd-global-behavior.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-set-prop-attribute.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-name-attribute.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-audio-attributes.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-navigate-event.html'>
+<link rel = 'import' href = '../inkd-behaviors/inkd-navigate-handler.html'>
+
+
+<dom-module id = 'inkd-pano'>
+    
+    <template>          
+        <content></content>
+        <div id = 'panorama'></div>
+    </template>
+    
+    <script>
+        Polymer({
+            is: 'inkd-pano',
+            
+            properties: {
+                width: {
+                    type: Number,
+                    value: 700
+                },
+                height: {
+                    type: Number,
+                    value: 300
+                },
+                fadeTime: {
+                    type: String,
+                    value: '1'
+                },
+                autorotate: String,
+                controls: {
+                    type: Boolean,
+                    value: false
+                },
+//                restart: {
+//                    type: Boolean,
+//                    value: false
+//                }
+            },
+            
+            behaviors: [GlobalBehavior, SetPropAttribute, NameAttribute, NavigateHandler, AudioAttributes],
+            
+            listeners: {
+                'hotspot-changed': 'updateHotspot'
+            },
+            
+            ready: function() {
+                this.$.panorama.style.width = this.width + 'px';
+                this.$.panorama.style.height = this.height + 'px';
+                
+                this.configuration = {
+                    'default': {},
+                    'scenes': {}
+                };
+                
+                this.onGlobalAttach('initiateConfig')
+            },
+
+            initiateConfig: function() {
+                this.scenes = Polymer.dom(this).querySelectorAll('inkd-pano-scene');
+                
+                this.startIndex = 0;
+                for (var i = 0; i < this.scenes.length; i++) {
+                    this.configuration.scenes[this.scenes[i].name] = this.scenes[i].sceneObject;
+                    this.gotoNames[i] = this.scenes[i].name;
+                    
+                    if (this.scenes[i].start) {
+                        this.startIndex = i;
+                    }
+                }
+                
+                this.currentIndex = this.startIndex;
+                if (this.globalStart.node) {
+                    var index = this.gotoNames.indexOf(this.globalStart.node);
+                    if (index !== -1) {
+                        this.currentIndex = index;
+                    } 
+                }
+                 
+                var defaultConfig = this.configuration.default;
+                
+                var time = this.fadeTime.replace(/\s/g, '');
+                if (time.endsWith('ms') && !isNaN(time.slice(0, -2))) {
+                    defaultConfig.sceneFadeDuration = Number(time.slice(0, -2));
+                } else if (time.endsWith('s') && !isNaN(time.slice(0, -1))) {
+                    defaultConfig.sceneFadeDuration = Number(time.slice(0, -1))*1000;
+                } else if (!isNaN(time)) {
+                    defaultConfig.sceneFadeDuration = Number(time)*1000;
+                } else {
+                    console.error('<inkd-pano> \'fade-time\' error: \'' + this.fadeTime + '\' is not a valid duration');
+                }
+                
+                if (this.autorotate) {
+                    var splitResult = this.autorotate.replace(/\s/g, '').split(':');
+                    var degrees = splitResult[0];
+                    if (!isNaN(degrees)) {
+                        defaultConfig.autoRotate = Number(degrees);
+                    } else {
+                        console.error('<inkd-pano> \'autorotate\' error: \'' + degrees + '\' is not a valid degrees/second value');
+                    }
+                    
+                    if (splitResult[1]) {
+                        var delay = splitResult[1];
+                        if (delay.endsWith('ms') && !isNaN(delay.slice(0, -2))) {
+                            defaultConfig.autoRotateInactivityDelay = Number(delay.slice(0, -2));
+                        } else if (delay.endsWith('s') && !isNaN(delay.slice(0, -1))) {
+                            defaultConfig.autoRotateInactivityDelay = Number(delay.slice(0, -1))*1000;
+                        } else if (!isNaN(time)) {
+                            defaultConfig.autoRotateInactivityDelay = Number(delay)*1000;
+                        } else {
+                            console.error('<inkd-pano> \'autorotate\' error: \'' + delay + '\' is not a valid inactivity delay value');
+                        }
+                    }
+                    
+                    if (splitResult[2]) {
+                        console.warn('<inkd-pano> \'autorotate\' error: \'' + splitResult.slice(2).join('\', \'') + '\' unused because only two values needed for degrees/second and inactivity delay');
+                    }
+                }
+                
+                defaultConfig.showControls = this.controls;
+                defaultConfig.compass = this.controls;
+                defaultConfig.autoLoad = true;
+            },
+            
+            updateHotspot: function(e) {
+                if (this.panorama.isLoaded() && e.target.tagName === 'INKD-PANO-SCENE') {
+                    var event = e.detail.event;
+
+                    if (event === 'add') {
+                        this.panorama.addHotSpot(e.detail.hotspotObject, e.detail.sceneId);
+                    } else if (event === 'remove') {
+                        this.panorama.removeHotSpot(e.detail.hotspotId, e.detail.sceneId);
+                    } else if (event === 'update') {
+                        this.panorama.removeHotSpot(e.detail.hotspotId, e.detail.sceneId);
+                        this.panorama.addHotSpot(e.detail.hotspotObject, e.detail.sceneId);
+                    }
+                }
+            },
+            
+            attached: function() {
+                this.isAttached = true;
+                
+                if (!this.started) {
+                    this.startPanorama();
+                    this.started = true;
+                } 
+//                else if (this.restart) {
+//                    this.startPanorama();
+//                }                
+            },
+            
+            detached: function() {
+                this.isAttached = false;
+            },
+            
+            startPanorama: function() {
+                this.handleSetProp();
+                this.handleAudio();
+                
+                if (this.panorama) {
+                    this.panorama.destroy();
+                }
+                
+                this.configuration.default.firstScene = this.scenes[this.currentIndex].name;
+                this.panorama = pannellum.viewer(this.$.panorama, this.configuration);
+                
+                this.scenes[this.currentIndex].handleSetProp();
+                this.scenes[this.currentIndex].handleAudio();
+                
+                // IF WE NEED ACCESS TO THE PANORAMA CANVAS
+                // this.panorama.on('load', (function() {console.log(this.panorama.getRenderer().getCanvas())}).bind(this));
+            },
+            
+            handleNavigate: function(index) {
+                if (index === -1) {
+                    if (this.isAttached) {
+                        this.currentIndex = this.startIndex;
+                        this.startPanorama();
+                    } else {
+                        this.started = false;
+                    }
+                } else {
+                    if (this.name) {
+                        this.setGlobal(this.name + '.prevScene', this.gotoNames[this.currentIndex]);
+                    }
+                    
+                    this.currentIndex = index;
+                    this.panorama.loadScene(this.gotoNames[index]);
+                    this.scenes[index].handleSetProp();
+                    this.scenes[index].handleAudio();
+                    
+                    if (this.name) {
+                        this.setGlobal(this.name + '.currentScene', this.gotoNames[this.currentIndex]);
+                    }
+                }
+            }
+        });
+        
+    </script>
+
+</dom-module>
+
+
+<dom-module id = 'inkd-pano-scene'>
+    
+    <template><content></content></template>
+    
+    <script>
+        Polymer({
+            is: 'inkd-pano-scene',
+            
+            properties: {
+                src: String,
+                up: {
+                    type: Number,
+                    value: 0
+                },
+                right: {
+                    type: Number,
+                    value: 0
+                },
+                start: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+            
+            behaviors: [GlobalBehavior, SetPropAttribute, NameAttribute, AudioAttributes],
+            
+            ready: function() {
+                if (this.src === undefined) {
+                    console.error('<inkd-pano-scene> error: No image files specified in \'src\'');
+                } else {
+                    var images = this.src.split(',');
+                    for (var i = 0; i < images.length; i++) {
+                        images[i] = images[i].trim();
+                    }
+                    
+                    if (images.length < 6) {
+                        this.sceneObject = {
+                            'type': 'equirectangular',
+                            'panorama': images[0]
+                        }
+                        
+                        if (images.length > 1) {
+                            console.warn('<inkd-pano-scene> \'src\' warning: \'' + images.slice(1).join('\', \'') + '\' unused because only 1 image is needed for equirectangular panorama (Note: 6 images needed for cubemap panorama)');
+                        }
+                    } else {
+                        this.sceneObject = {
+                            'type': 'cubemap',
+                            'cubeMap': images.slice(0, 6)
+                        }
+                        
+                        if (images.length > 6) {
+                            console.warn('<inkd-pano-scene> \'src\' warning: \'' + images.slice(6).join('\', \'') + '\' unused because only 6 images are needed for cubemap panorama');
+                        }
+                    }
+                } 
+                
+                this.sceneObject.pitch = this.up;
+                this.sceneObject.yaw = this.right;
+                this.sceneObject.autoLoad = true;
+                this.sceneObject.hotSpots = [];
+                
+                this.currentHotspotIds = [];
+                this.nextHotspotId = 0;
+                this.hotspotIdPrefix = this.name === undefined ? 'unnamed' : this.name;
+                
+                this.onGlobalReady('initiateScene')
+            },
+            
+            initiateScene: function() {
+                var hotspots = Polymer.dom(this).querySelectorAll('INKD-PANO-HOTSPOT');
+                
+                this.sceneObject.hotSpots = [];
+                
+                for (var i = 0; i < hotspots.length; i++) {   
+                    hotspots[i].hotspotObject.id = this.hotspotIdPrefix + this.nextHotspotId;
+                    this.nextHotspotId++;
+                    this.currentHotspotIds.push(hotspots[i].hotspotObject.id);
+                    
+                    this.sceneObject.hotSpots[i] = hotspots[i].hotspotObject;
+                    
+                    this.listen(hotspots[i], 'hotspot-changed', 'updateHotspot');
+                }                
+            },
+            
+            updateHotspot: function(e) {
+                e.stopPropagation();
+                var hotspot = e.target;
+                var event = e.detail.event;
+                
+                if (hotspot.hotspotObject.id === undefined) {
+                    hotspot.hotspotObject.id = this.hotspotIdPrefix + this.nextHotspotId;
+                    this.nextHotspotId++;
+                }
+                
+                var hotspotId = hotspot.hotspotObject.id;
+                
+                if (event === 'add') {
+                    if (!this.currentHotspotIds.includes(hotspotId)) {
+                        this.currentHotspotIds.push(hotspotId);
+                        this.fire('hotspot-changed', {event: 'add', sceneId: this.name, hotspotObject: hotspot.hotspotObject});
+                    }
+                    
+                } else if (event === 'remove') {            
+                    var index = this.currentHotspotIds.indexOf(hotspotId);
+                    if (index !== -1) {
+                        this.currentHotspotIds.splice(index, 1);
+                        this.fire('hotspot-changed', {event: 'remove', sceneId: this.name, hotspotId: hotspotId});
+                    }
+                } else if (event === 'update') {
+                    
+                }
+                
+                e.detail.hotspotId = hotspotId;
+                e.detail.sceneId = this.name;
+            }
+            
+        });
+        
+    </script>
+
+</dom-module>
+
+
+<dom-module id = 'inkd-pano-hotspot'>
+    
+    <template></template>
+    
+    <script>
+        Polymer({
+            is: 'inkd-pano-hotspot',
+            
+            properties: {
+                up: {
+                    type: Number,
+                    value: 0
+                },
+                right: {
+                    type: Number,
+                    value: 0
+                }
+            },
+            
+            behaviors: [GlobalBehavior, SetPropAttribute, NavigateEvent, AudioAttributes],
+            
+            ready: function() {
+                this.hotspotObject = {
+                    'pitch': this.up,
+                    'yaw': this.right
+                }
+                
+                if (this.goto || this.restart !== undefined) {
+                    this.hotspotObject.type = 'scene';
+                    this.hotspotObject.clickHandlerFunc = function(e, element) {
+                        element.handleSetProp();
+                        element.handleAudio();
+                        element.fireNavigate();
+                    }
+                    this.hotspotObject.clickHandlerArgs = this;
+                } else {
+                    this.hotspotObject.type = 'info';
+                }
+                    
+                this.hotspotObject.createTooltipFunc = this.createHotspot;
+                this.hotspotObject.createTooltipArgs = this;
+                
+                this.hidden = true;
+                this.display = this.style.display;
+                this.style.display = 'none';
+            },
+            
+            attached: function() {
+                this.fire('hotspot-changed', {event: 'add'});
+            },
+            
+            detached: function() {  
+                this.fire('hotspot-changed', {event: 'remove'});
+            },
+            
+            createHotspot: function(hotspotDiv, element) { 
+                var hotspot = document.createElement('inkd-pano-hotspot');
+                hotspot.innerHTML = Polymer.dom(element).innerHTML;
+                
+                hotspot.hidden = false;
+                hotspot.style.display = element.display;
+                
+                hotspotDiv.appendChild(hotspot);
+            }
+            
+        });
+        
+    </script>
+
+</dom-module>

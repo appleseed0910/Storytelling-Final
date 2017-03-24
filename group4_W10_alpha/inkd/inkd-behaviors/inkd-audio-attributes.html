@@ -1,0 +1,62 @@
+<script>
+    AudioAttributes = {
+        
+        properties: {
+            playAudio: String,
+            stopAudio: String,
+            resumeAudio: String
+        },
+                
+        ready: function() {
+            this.onGlobalAttach('initiateAudio');
+        },
+        
+        initiateAudio: function() {
+            
+            if (this.playAudio) {
+                var element = this.getGlobalPrivate('audio-' + this.playAudio);
+                if (element === undefined) {
+                    console.error('<' + this.tagName.toLowerCase() + '> \'play-audio\' error: <audio> with name \'' + this.playAudio + '\' does not exist');
+                } else {
+                    this.playAudioElement = element.audio;
+                }
+            }
+            
+            if (this.stopAudio) {
+                var element = this.getGlobalPrivate('audio-' + this.stopAudio);
+                if (element === undefined) {
+                    console.error('<' + this.tagName.toLowerCase() + '> \'stop-audio\' error: <audio> with name \'' + this.stopAudio + '\' does not exist');
+                } else {
+                    this.stopAudioElement = element.audio;
+                }
+            }
+            
+            if (this.resumeAudio) {
+                var element = this.getGlobalPrivate('audio-' + this.resumeAudio);
+                if (element === undefined) {
+                    console.error('<' + this.tagName.toLowerCase() + '> \'resume-audio\' error: <audio> with name \'' + this.resumeAudio + '\' does not exist');
+                } else {
+                    this.resumeAudioElement = element.audio;
+                }
+            }
+        },
+        
+        handleAudio: function() {
+            if (this.playAudio && this.playAudioElement) {
+                this.playAudioElement.currentTime = 0;
+                this.playAudioElement.play();
+                this.setGlobal(this.playAudio + '.playing', true);
+            }
+            
+            if (this.stopAudio && this.stopAudioElement) {
+                this.stopAudioElement.pause();
+                this.setGlobal(this.stopAudio + '.playing', false);
+            }
+            
+            if (this.resumeAudio && this.resumeAudioElement) {
+                this.resumeAudioElement.play();
+                this.setGlobal(this.resumeAudio + '.playing', true);
+            }
+        }
+    };
+</script>

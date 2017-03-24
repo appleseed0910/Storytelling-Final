@@ -1,0 +1,30 @@
+<script>
+    NameAttribute = {
+        
+        properties: {
+            name: String
+        },
+        
+        ready: function() {
+            this.onGlobalReady('setName');
+        },
+        
+        setName: function() {
+            if (this.name) {
+                if (this.globalNames.includes(this.name)) {
+                    console.warn('Name \'' + this.name + '\' used by multiple tags');
+                } else {
+                    this.globalNames.push(this.name);
+                }
+            }
+            
+            if (this.nameProps != undefined) {
+                this.setGlobal(this.name, {});
+                for (var i = 0; i < this.nameProps.length; i++) {
+                    this.setGlobal(this.name + '.' + this.nameProps[i].prop, this.nameProps[i].default);
+                }
+            }
+        }
+    };
+    
+</script>
